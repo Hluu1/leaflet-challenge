@@ -1,13 +1,71 @@
-let myMap = L.map("map", {
-    center: [27.96044, -82.30695],
-    zoom: 3
+// Set up the map and initial tile layer
+let myMap = L.map("map").setView([27.96044, -82.30695], 3);
+
+let streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+}).addTo(myMap);
+
+let topoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+    '<a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> ' +
+    '(<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+});
+
+// Create the layer groups for earthquakes and tectonic plates
+let earthquakesLayer = L.layerGroup();
+let tectonicPlatesLayer = L.layerGroup();
+
+// Fetch and add the tectonic plates data to the map
+fetch("https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json")
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    L.geoJSON(data, {
+      style: function(feature) {
+        return {
+          color: "#ff7800",
+          weight: 2
+        };
+      }
+    }).addTo(tectonicPlatesLayer);
   });
+
+// Fetch and add the earthquake data to the map
+fetch("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson")
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    L.geoJSON(data, {
+      pointToLayer: function(feature, latlng) {
+        let markerStyle = createMarkerStyle(feature);
+        let marker = L.circleMarker(latlng, markerStyle);
+
+        // Add tooltip
+        marker.bindTooltip(createTooltipContent(feature));
+
+        return marker;
+      }
+    }).addTo(earthquakesLayer);
+  });
+
+// Define base maps
+let baseMaps = {
+  "Street Map": streetMap,
+  "Topographic Map": topoMap
+};
+
+// Define overlay maps
+let overlayMaps = {
+  "Earthquakes": earthquakesLayer,
+  "Tectonic Plates": tectonicPlatesLayer
+};
+
+// Add layer control to the map
+L.control.layers(baseMaps, overlayMaps).addTo(myMap);
   
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-  }).addTo(myMap);
-  
-  let geoData = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
+let geoData = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
   
   // Function to get marker size based on magnitude
   function getMarkerSize(magnitude) {
@@ -31,10 +89,14 @@ let myMap = L.map("map", {
     }
   }
   
-  // Function to create marker style
-  function createMarkerStyle(earthquake) {
-    let magnitude = earthquake.properties.mag;
+// Function to create marker style
+function createMarkerStyle(earthquake) {
+    let magnitude = earthquake.properties?.mag;
     let depth = earthquake.geometry.coordinates[2];
+  
+    if (typeof magnitude !== 'number' || isNaN(magnitude)) {
+      magnitude = 0;
+    }
   
     return {
       radius: getMarkerSize(magnitude),
@@ -45,6 +107,7 @@ let myMap = L.map("map", {
       fillOpacity: 0.8
     };
   }
+  
   
   // Function to create tooltip content
   function createTooltipContent(earthquake) {
