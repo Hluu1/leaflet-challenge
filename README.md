@@ -13,7 +13,7 @@ Part 1: Create the Earthquake Visualisation
       
 Part 2: Gather and Plot More Data
       Plot a second dataset on your map to illustrate the relationship between tectonic plates and seismic activity. You will need to pull in this dataset and visualise it alongside your original data. Data on tectonic 
-      plates can be found at https://github.com/fraxen/tectonicplatesLinks to an external site [FeedLinks to an external site](https://github.com/fraxen/tectonicplates). 
+      plates can be found at https://github.com/fraxen/tectonicplatesLinks. 
       Plot the tectonic plates dataset on the map in addition to the earthquakes.
       Add other base maps to choose from.
       Put each dataset into separate overlays that can be turned on and off independently.
